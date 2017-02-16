@@ -5,15 +5,15 @@
 SHELL := /bin/bash
 
 
-SUBDIRS = base matrix util feat tree thread gmm transform sgmm \
+SUBDIRS = base matrix util feat tree thread gmm transform \
           fstext hmm lm decoder lat kws cudamatrix nnet \
-          bin fstbin gmmbin fgmmbin sgmmbin featbin \
+          bin fstbin gmmbin fgmmbin featbin \
           nnetbin latbin sgmm2 sgmm2bin nnet2 nnet3 chain nnet3bin nnet2bin kwsbin \
           ivector ivectorbin online2 online2bin lmbin chainbin
 
-MEMTESTDIRS = base matrix util feat tree thread gmm transform sgmm \
+MEMTESTDIRS = base matrix util feat tree thread gmm transform \
           fstext hmm lm decoder lat nnet kws chain \
-          bin fstbin gmmbin fgmmbin sgmmbin featbin \
+          bin fstbin gmmbin fgmmbin featbin \
           nnetbin latbin sgmm2 nnet2 nnet3 nnet2bin nnet3bin sgmm2bin kwsbin \
           ivector ivectorbin online2 online2bin lmbin
 
@@ -51,7 +51,9 @@ checkversion:
 ifeq ($(shell ./configure --version),$(CONFIGURE_VERSION))
 	@echo "The version of configure script matches kaldi.mk version. Good."
 else
-	$(error The kaldi.mk file was generated using a different version of configure script. Run the configure script again.)
+	@echo "The kaldi.mk file was generated using a different version of configure script. Please rerun the configure again"
+	@test -f ./kaldi.mk && echo  "Hint: Previous configure command line: " && head -n 2 ./kaldi.mk | grep configure | sed 's/^# *//g'
+	@false
 endif
 
 biglib: $(SUBDIRS_LIB)
@@ -106,6 +108,9 @@ check_portaudio:
 clean: rmlibdir
 	-for x in $(SUBDIRS) $(EXT_SUBDIRS); do $(MAKE) -C $$x clean; done
 
+distclean: clean
+	-for x in $(SUBDIRS) $(EXT_SUBDIRS); do $(MAKE) -C $$x distclean; done
+
 test: $(addsuffix /test, $(SUBDIRS))
 
 ext_test: $(addsuffix /test, $(EXT_SUBDIRS))
@@ -122,6 +127,8 @@ cudavalgrind:
 valgrind:
 	-for x in $(MEMTESTDIRS); do $(MAKE) -C $$x valgrind || { echo "valgrind on $$x failed"; exit 1; }; done
 
+base/.depend.mk:
+	$(MAKE) depend
 
 depend: $(addsuffix /depend, $(SUBDIRS))
 
@@ -146,12 +153,12 @@ $(EXT_SUBDIRS) : mklibdir
 # this is necessary for correct parallel compilation
 #1)The tools depend on all the libraries
 
-bin fstbin gmmbin fgmmbin sgmmbin sgmm2bin featbin nnetbin nnet2bin nnet3bin chainbin latbin ivectorbin lmbin kwsbin online2bin: \
- base matrix util feat tree thread gmm transform sgmm sgmm2 fstext hmm \
+bin fstbin gmmbin fgmmbin sgmm2bin featbin nnetbin nnet2bin nnet3bin chainbin latbin ivectorbin lmbin kwsbin online2bin: \
+ base matrix util feat tree thread gmm transform sgmm2 fstext hmm \
  lm decoder lat cudamatrix nnet nnet2 nnet3 ivector chain kws online2
 
 #2)The libraries have inter-dependencies
-base:
+base: base/.depend.mk
 matrix: base
 thread: base
 util: base matrix thread
@@ -159,12 +166,11 @@ feat: base matrix util gmm transform tree thread
 tree: base util thread matrix
 gmm: base util matrix tree thread
 transform: base util matrix gmm tree thread
-sgmm: base util matrix gmm tree transform thread hmm
 sgmm2: base util matrix gmm tree transform thread hmm
 fstext: base util thread matrix tree
 hmm: base tree matrix util thread
 lm: base util thread matrix fstext
-decoder: base util thread matrix gmm sgmm hmm tree transform lat
+decoder: base util thread matrix gmm hmm tree transform lat
 lat: base util thread hmm tree matrix
 cudamatrix: base util thread matrix
 nnet: base util hmm tree thread matrix cudamatrix
@@ -173,8 +179,8 @@ nnet3: base util matrix thread lat gmm hmm tree transform cudamatrix chain fstex
 chain: lat hmm tree fstext matrix cudamatrix util thread base
 ivector: base util matrix thread transform tree gmm
 #3)Dependencies for optional parts of Kaldi
-onlinebin: base matrix util feat tree gmm transform sgmm sgmm2 fstext hmm lm decoder lat cudamatrix nnet nnet2 online thread
-# python-kaldi-decoding: base matrix util feat tree thread gmm transform sgmm sgmm2 fstext hmm decoder lat online
+onlinebin: base matrix util feat tree gmm transform sgmm2 fstext hmm lm decoder lat cudamatrix nnet nnet2 online thread
+# python-kaldi-decoding: base matrix util feat tree thread gmm transform sgmm2 fstext hmm decoder lat online
 online: decoder gmm transform feat matrix util base lat hmm thread tree
 online2: decoder gmm transform feat matrix util base lat hmm thread tree ivector cudamatrix nnet2 nnet3 chain
 kws: base util thread hmm tree matrix lat

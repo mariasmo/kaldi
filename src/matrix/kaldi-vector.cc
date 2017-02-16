@@ -307,6 +307,14 @@ void VectorBase<Real>::SetRandn() {
 }
 
 template<typename Real>
+void VectorBase<Real>::SetRandUniform() {
+  kaldi::RandomState rstate;
+  for (MatrixIndexT i = 0; i < Dim(); i++) {
+    *(data_+i) = RandUniform(&rstate);
+  }
+}
+
+template<typename Real>
 MatrixIndexT VectorBase<Real>::RandCategorical() const {
   kaldi::RandomState rstate;
   Real sum = this->Sum();
@@ -882,8 +890,8 @@ void VectorBase<Real>::Tanh(const VectorBase<Real> &src) {
       Real inv_expx = Exp(-x);
       x = -1.0 + 2.0 / (1.0 + inv_expx * inv_expx);
     } else {
-      Real inv_expx = Exp(x);
-      x = 1.0 - 2.0 / (1.0 + inv_expx * inv_expx);
+      Real expx = Exp(x);
+      x = 1.0 - 2.0 / (1.0 + expx * expx);
     }
     data_[i] = x;
   }
@@ -1324,4 +1332,3 @@ template class VectorBase<float>;
 template class VectorBase<double>;
 
 }  // namespace kaldi
-
